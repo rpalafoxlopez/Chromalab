@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChromaLab 3D - Color Explorer</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<header class="header">
+  <div class="logo-area">
+    <span class="material-symbols-outlined logo-icon">palette</span>
+    <span class="logo-text">ColorLab</span>
+  </div>
+  <nav class="nav-links">
+    <a class="nav-link active" data-section="explorer">Explorer</a>
+    <a class="nav-link" data-section="palettes">Palettes</a>
+    <a class="nav-link" data-section="contrast">Contrast</a>
+    <a class="nav-link" data-section="library">Library</a>
+    <a class="nav-link" data-section="prompt">Prompt</a>
+  </nav>
+  <button class="settings-btn">
+    <span class="material-symbols-outlined" style="font-size:20px">settings</span>
+  </button>
+</header>
+
+<div class="main-container">
+
+  <div class="section active" id="section-explorer">
+    <div class="canvas-area" id="canvas-area">
+      <canvas id="three-canvas"></canvas>
+      <div class="instructions">
+        <kbd>Click + Drag</kbd> to rotate &nbsp;|&nbsp; <kbd>Scroll</kbd> to zoom &nbsp;|&nbsp; <kbd>Click</kbd> a color to select
+      </div>
+    </div>
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h2 class="sidebar-title">Selection</h2>
+        <button class="settings-btn" id="close-sidebar" style="display:none">
+          <span class="material-symbols-outlined" style="font-size:18px">close</span>
+        </button>
+      </div>
+      <div class="sidebar-body">
+        <div class="swatch" id="selected-swatch" style="background-color: #0014B1;">
+          <button class="copy-btn" id="copy-hex" title="Copy HEX">
+            <span class="material-symbols-outlined" style="font-size:16px">content_copy</span>
+          </button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div class="data-row"><span class="data-label">HEX</span><span class="data-value" id="panel-hex">#0014B1</span></div>
+          <div class="data-row"><span class="data-label">RGB</span><span class="data-value" id="panel-rgb">0, 20, 177</span></div>
+          <div class="data-row"><span class="data-label">HSL</span><span class="data-value" id="panel-hsl">233°, 100%, 35%</span></div>
+        </div>
+        <div style="margin-top:auto;padding-top:16px;display:flex;flex-direction:column;gap:8px;">
+          <button class="action-btn btn-primary" id="explorer-save-palette">
+            <span class="material-symbols-outlined" style="font-size:16px">add</span>Save to Palette
+          </button>
+          <button class="action-btn btn-secondary" id="explorer-send-contrast">
+            <span class="material-symbols-outlined" style="font-size:16px">contrast</span>Check Contrast
+          </button>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="section" id="section-palettes">
+    <div class="palettes-layout">
+      <div class="palettes-main">
+        <div>
+          <h1 class="palettes-title">Palette Builder</h1>
+          <p class="palettes-subtitle">Pick colors, build your palette, and export as JSON. Nothing is saved — everything lives in memory.</p>
+        </div>
+        <div class="picker-area">
+          <div class="picker-swatch-large" id="picker-swatch" style="background-color: #adc6ff;">
+            <span class="material-symbols-outlined" style="color:rgba(0,0,0,0.3);font-size:40px">colorize</span>
+          </div>
+          <div class="picker-controls">
+            <div class="slider-group">
+              <div class="slider-label"><span>Hue</span><span id="hue-val">220°</span></div>
+              <input type="range" min="0" max="360" value="220" class="slider-track hue-slider" id="hue-slider">
+            </div>
+            <div class="slider-group">
+              <div class="slider-label"><span>Saturation</span><span id="sat-val">100%</span></div>
+              <input type="range" min="0" max="100" value="100" class="slider-track sat-slider" id="sat-slider">
+            </div>
+            <div class="slider-group">
+              <div class="slider-label"><span>Lightness</span><span id="light-val">72%</span></div>
+              <input type="range" min="0" max="100" value="72" class="slider-track light-slider" id="light-slider">
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+              <input type="text" id="hex-input" value="#ADC6FF" style="background:#2d3449;border:1px solid #424754;border-radius:4px;padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:13px;color:#dae2fd;width:120px;text-transform:uppercase;" maxlength="7">
+              <button class="add-color-btn" id="add-to-palette-btn">
+                <span class="material-symbols-outlined" style="font-size:18px">add</span>Add to Palette
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="quick-colors">
+          <div class="quick-colors-title">Quick Pick</div>
+          <div class="quick-colors-grid" id="quick-colors-grid"></div>
+        </div>
+        <div class="palette-builder">
+          <div class="palette-builder-header">
+            <span class="palette-builder-title">Your Palette</span>
+            <span class="palette-count" id="palette-count">0 colors</span>
+          </div>
+          <div class="palette-slots" id="palette-slots">
+            <div class="palette-empty">No colors yet. Pick a color and click "Add to Palette".</div>
+          </div>
+          <div class="palette-preview-strip" id="palette-preview-strip" style="display:none;"></div>
+        </div>
+      </div>
+      <div class="palettes-sidebar">
+        <div class="json-area">
+          <div class="json-header">
+            <span class="json-title">palette.json</span>
+            <div class="json-actions">
+              <button class="json-btn json-btn-copy" id="json-copy-btn"><span class="material-symbols-outlined" style="font-size:14px">content_copy</span>Copy JSON</button>
+              <button class="json-btn json-btn-clear" id="json-clear-btn"><span class="material-symbols-outlined" style="font-size:14px">delete</span>Clear</button>
+            </div>
+          </div>
+          <pre class="json-preview" id="json-preview">{  "name": "my-palette",  "colors": [],  "count": 0}</pre>
+        </div>
+        <div style="margin-top:auto;display:flex;flex-direction:column;gap:12px;">
+          <div class="data-row"><span class="data-label">Colors</span><span class="data-value" id="sidebar-count">0</span></div>
+          <div class="data-row"><span class="data-label">Lightest</span><span class="data-value" id="sidebar-lightest">—</span></div>
+          <div class="data-row"><span class="data-label">Darkest</span><span class="data-value" id="sidebar-darkest">—</span></div>
+          <div class="data-row"><span class="data-label">Most Saturated</span><span class="data-value" id="sidebar-saturated">—</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="section-contrast">
+    <div class="contrast-layout">
+      <div class="contrast-main">
+        <div>
+          <h1 class="contrast-title">Contrast Checker</h1>
+          <p class="contrast-subtitle">Test color combinations against WCAG 2.1 accessibility standards.</p>
+        </div>
+        <div class="contrast-pickers">
+          <div class="contrast-picker-card">
+            <div class="contrast-picker-label"><span class="dot" id="bg-dot" style="background:#0b1326"></span> Background</div>
+            <div class="contrast-swatch" id="bg-swatch" style="background-color:#0b1326;">
+              <input type="color" id="bg-color-input" value="#0b1326">
+            </div>
+            <input type="text" class="contrast-hex-input" id="bg-hex" value="#0B1326" maxlength="7">
+          </div>
+          <button class="contrast-swap-btn" id="contrast-swap" title="Swap colors">
+            <span class="material-symbols-outlined">swap_horiz</span>
+          </button>
+          <div class="contrast-picker-card">
+            <div class="contrast-picker-label"><span class="dot" id="fg-dot" style="background:#dae2fd"></span> Foreground / Text</div>
+            <div class="contrast-swatch" id="fg-swatch" style="background-color:#dae2fd;">
+              <input type="color" id="fg-color-input" value="#dae2fd">
+            </div>
+            <input type="text" class="contrast-hex-input" id="fg-hex" value="#DAE2FD" maxlength="7">
+          </div>
+        </div>
+        <div class="contrast-preview">
+          <div class="contrast-preview-title">Live Preview</div>
+          <div class="contrast-preview-box" id="contrast-preview-box">
+            <div class="contrast-preview-text-lg" id="preview-lg">The quick brown fox jumps over the lazy dog.</div>
+            <div class="contrast-preview-text-md" id="preview-md">This is normal body text at 16px. Lorem ipsum dolor sit amet.</div>
+            <div class="contrast-preview-text-sm" id="preview-sm">Small text at 12px. Consectetur adipiscing elit.</div>
+          </div>
+        </div>
+        <div class="contrast-score">
+          <div class="contrast-score-card">
+            <span class="contrast-score-value" id="score-ratio">4.56</span>
+            <span class="contrast-score-label">Contrast Ratio</span>
+          </div>
+          <div class="contrast-score-card">
+            <span class="contrast-badge badge-pass" id="badge-aa-normal">PASS</span>
+            <span class="contrast-score-label">AA Normal Text</span>
+          </div>
+          <div class="contrast-score-card">
+            <span class="contrast-badge badge-pass" id="badge-aa-large">PASS</span>
+            <span class="contrast-score-label">AA Large Text</span>
+          </div>
+          <div class="contrast-score-card">
+            <span class="contrast-badge badge-fail" id="badge-aaa-normal">FAIL</span>
+            <span class="contrast-score-label">AAA Normal Text</span>
+          </div>
+          <div class="contrast-score-card">
+            <span class="contrast-badge badge-fail" id="badge-aaa-large">FAIL</span>
+            <span class="contrast-score-label">AAA Large Text</span>
+          </div>
+        </div>
+        <div style="background:#171f33;border:1px solid #424754;border-radius:12px;overflow:hidden;">
+          <table class="contrast-wcag-table">
+            <thead><tr><th>Level</th><th>Normal Text</th><th>Large Text</th><th>UI Components</th></tr></thead>
+            <tbody>
+              <tr><td>AA</td><td id="wcag-aa-normal">4.5:1</td><td id="wcag-aa-large">3:1</td><td id="wcag-aa-ui">3:1</td></tr>
+              <tr><td>AAA</td><td id="wcag-aaa-normal">7:1</td><td id="wcag-aaa-large">4.5:1</td><td id="wcag-aaa-ui">—</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="contrast-sidebar">
+        <div class="json-area">
+          <div class="json-header"><span class="json-title">Quick Pairs</span></div>
+          <div id="contrast-quick-pairs" style="display:flex;flex-direction:column;gap:10px;"></div>
+        </div>
+        <div style="margin-top:auto;display:flex;flex-direction:column;gap:12px;">
+          <div class="data-row"><span class="data-label">Background</span><span class="data-value" id="contrast-bg-name">#0B1326</span></div>
+          <div class="data-row"><span class="data-label">Foreground</span><span class="data-value" id="contrast-fg-name">#DAE2FD</span></div>
+          <div class="data-row"><span class="data-label">Luminance BG</span><span class="data-value" id="contrast-lum-bg">0.012</span></div>
+          <div class="data-row"><span class="data-label">Luminance FG</span><span class="data-value" id="contrast-lum-fg">0.678</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="section-prompt">
+    <div class="palettes-layout">
+      <div class="palettes-main">
+        <div>
+          <h1 class="palettes-title">Crea tu Prompt</h1>
+          <p class="palettes-subtitle">Elige el tipo de pieza, tu tema y 3 a 4 colores. El prompt se arma solo, listo para pegarlo en tu generador de imágenes con IA.</p>
+        </div>
+
+        <div class="pr-field">
+          <div class="pr-label"><span>1 · Tipo de diseño</span></div>
+          <div class="pr-chips" id="pr-types"></div>
+        </div>
+
+        <div class="pr-field">
+          <div class="pr-label"><span>2 · Tema, evento, marca o producto</span></div>
+          <input type="text" class="pr-text" id="pr-topic" placeholder="Ej. Festival de Música Electrónica 2026">
+        </div>
+
+        <div class="pr-field">
+          <div class="pr-label"><span>3 · Paleta cromática</span><span class="pr-status bad" id="pr-status">0 / 4</span></div>
+          <div class="pr-hint">Toca los colores de tu paleta del builder, o agrega uno nuevo. Mínimo 3, máximo 4. Puedes editar el nombre de cada color.</div>
+          <div class="pr-pal" id="pr-pal"></div>
+          <div class="pr-add">
+            <input type="color" id="pr-pick" value="#14213d">
+            <input type="text" class="pr-text" id="pr-hex" value="#14213D" maxlength="7" spellcheck="false">
+            <button class="pr-add-btn" id="pr-add-btn"><span class="material-symbols-outlined" style="font-size:16px">add</span>Agregar color</button>
+          </div>
+          <div class="pr-sel" id="pr-sel"></div>
+        </div>
+
+        <div class="pr-field">
+          <div class="pr-label"><span>4 · Colores que NO deben aparecer</span></div>
+          <div class="pr-chips" id="pr-banned"></div>
+          <input type="text" class="pr-text" id="pr-banned-extra" placeholder="Otros colores a evitar, separados por coma (opcional)">
+        </div>
+
+        <div class="pr-field">
+          <div class="pr-label"><span>5 · Contexto adicional (opcional)</span></div>
+          <textarea class="pr-text" id="pr-context" placeholder="Público objetivo, formato, textos que deben aparecer…"></textarea>
+        </div>
+      </div>
+
+      <div class="palettes-sidebar">
+        <div class="json-header">
+          <span class="json-title">prompt.txt</span>
+        </div>
+        <div class="pr-strip pr-strip-empty" id="pr-strip">Sin colores</div>
+        <div class="pr-out" id="pr-out"></div>
+        <div class="pr-out-actions">
+          <button class="action-btn btn-primary" id="pr-copy"><span class="material-symbols-outlined" style="font-size:16px">content_copy</span>Copiar</button>
+          <button class="action-btn btn-secondary" id="pr-download"><span class="material-symbols-outlined" style="font-size:16px">download</span>.txt</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" id="section-library">
+    <div class="library-layout">
+      <div class="library-main">
+        <h1 class="library-title">Color Library</h1>
+        <p class="library-subtitle">Browse curated palettes from popular design systems. Click a color to copy, or load a full palette into the builder.</p>
+        <div class="library-grid" id="library-grid"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="tooltip" id="tooltip">#000000</div>
+
+<nav class="bottom-nav">
+  <button class="bottom-nav-item active" data-section="explorer"><span class="material-symbols-outlined">explore</span><span>Explorer</span></button>
+  <button class="bottom-nav-item" data-section="palettes"><span class="material-symbols-outlined">color_lens</span><span>Palettes</span></button>
+  <button class="bottom-nav-item" data-section="contrast"><span class="material-symbols-outlined">contrast</span><span>Contrast</span></button>
+  <button class="bottom-nav-item" data-section="library"><span class="material-symbols-outlined">book</span><span>Library</span></button>
+  <button class="bottom-nav-item" data-section="prompt"><span class="material-symbols-outlined">auto_awesome</span><span>Prompt</span></button>
+</nav>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
